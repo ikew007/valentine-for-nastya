@@ -13,6 +13,7 @@
 
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -34,7 +35,7 @@
 
     @keyframes floatAmbient {
       0% {
-        transform: translateY(100vh) rotate(0deg);
+        transform: translateY(calc(100vh + 40px)) rotate(0deg);
         opacity: 0;
       }
       10% {
@@ -44,8 +45,27 @@
         opacity: 1;
       }
       100% {
-        transform: translateY(-10vh) rotate(360deg);
+        transform: translateY(-40px) rotate(360deg);
         opacity: 0;
+      }
+    }
+
+    @supports (height: 100dvh) {
+      @keyframes floatAmbient {
+        0% {
+          transform: translateY(calc(100dvh + 40px)) rotate(0deg);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-40px) rotate(360deg);
+          opacity: 0;
+        }
       }
     }
 
@@ -203,23 +223,9 @@
     .falling-heart {
       position: absolute;
       top: -60px;
-      animation: fall linear forwards;
       pointer-events: none;
       filter: drop-shadow(0 0 6px rgba(255, 50, 100, 0.4));
-    }
-
-    @keyframes fall {
-      0% {
-        opacity: 1;
-        transform: translateY(0) rotate(0deg) scale(1);
-      }
-      70% {
-        opacity: 1;
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(105vh) rotate(720deg) scale(0.5);
-      }
+      will-change: transform, opacity;
     }
 
     /* Result message */
@@ -351,10 +357,14 @@
   </div>
 
   <script>
+    // Detect mobile for reduced heart count and performance
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 600;
+
     // Create ambient background hearts
     function createAmbientHearts() {
       const hearts = ['♥', '♡', '❤'];
-      for (let i = 0; i < 12; i++) {
+      const ambientCount = isMobile ? 6 : 12;
+      for (let i = 0; i < ambientCount; i++) {
         const heart = document.createElement('div');
         heart.className = 'ambient-heart';
         heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
@@ -367,25 +377,38 @@
     }
     createAmbientHearts();
 
-    // Falling hearts animation
+    // Falling hearts animation using Web Animations API with real pixel values
     function spawnFallingHearts(count) {
       const container = document.getElementById('hearts-container');
       const emojis = ['❤️', '💕', '💖', '💗', '💓', '💘', '💝', '🌹', '✨', '💞'];
+      // Use actual visible height — fixes iOS Safari vh bug
+      const fallDistance = window.innerHeight + 120;
+      const adjustedCount = isMobile ? Math.floor(count * 0.5) : count;
 
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < adjustedCount; i++) {
         setTimeout(() => {
           const heart = document.createElement('div');
           heart.className = 'falling-heart';
           heart.textContent = emojis[Math.floor(Math.random() * emojis.length)];
           heart.style.left = Math.random() * 100 + '%';
-          heart.style.fontSize = (20 + Math.random() * 35) + 'px';
-          const duration = 2.5 + Math.random() * 3;
-          heart.style.animationDuration = duration + 's';
-          heart.style.animationDelay = '0s';
+          heart.style.fontSize = (isMobile ? 18 : 20) + Math.random() * (isMobile ? 22 : 35) + 'px';
           container.appendChild(heart);
 
+          const duration = 2.5 + Math.random() * 3;
+          const sway = (Math.random() - 0.5) * 80;
+
+          heart.animate([
+            { transform: 'translateY(0) translateX(0) rotate(0deg) scale(1)', opacity: 1 },
+            { opacity: 1, offset: 0.7 },
+            { transform: `translateY(${fallDistance}px) translateX(${sway}px) rotate(720deg) scale(0.5)`, opacity: 0 }
+          ], {
+            duration: duration * 1000,
+            easing: 'linear',
+            fill: 'forwards'
+          });
+
           setTimeout(() => heart.remove(), duration * 1000 + 100);
-        }, i * 60);
+        }, i * (isMobile ? 80 : 60));
       }
     }
 
@@ -423,11 +446,11 @@
       card.classList.add('hidden');
 
       // Spawn hearts
-      spawnFallingHearts(80);
+      spawnFallingHearts(isMobile ? 40 : 80);
 
       // Keep spawning hearts in waves
-      setTimeout(() => spawnFallingHearts(40), 2000);
-      setTimeout(() => spawnFallingHearts(30), 4000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 20 : 40), 2000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 15 : 30), 4000);
 
       // Show result after short delay
       setTimeout(() => {
@@ -446,8 +469,8 @@
         // Sparkle burst at center
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2 - 40;
-        createSparkles(cx, cy, 30);
-        setTimeout(() => createSparkles(cx, cy, 20), 400);
+        createSparkles(cx, cy, isMobile ? 16 : 30);
+        setTimeout(() => createSparkles(cx, cy, isMobile ? 10 : 20), 400);
       }, 600);
     }
   </script>
