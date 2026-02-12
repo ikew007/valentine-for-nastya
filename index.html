@@ -23,50 +23,15 @@
       position: relative;
     }
 
-    /* Ambient floating hearts in background */
+    /* Ambient floating hearts in background — desktop only */
     .ambient-heart {
       position: fixed;
+      bottom: -40px;
       color: rgba(255, 50, 100, 0.06);
       font-size: 30px;
-      animation: floatAmbient linear infinite;
       pointer-events: none;
       z-index: 0;
-    }
-
-    @keyframes floatAmbient {
-      0% {
-        transform: translateY(calc(100vh + 40px)) rotate(0deg);
-        opacity: 0;
-      }
-      10% {
-        opacity: 1;
-      }
-      90% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-40px) rotate(360deg);
-        opacity: 0;
-      }
-    }
-
-    @supports (height: 100dvh) {
-      @keyframes floatAmbient {
-        0% {
-          transform: translateY(calc(100dvh + 40px)) rotate(0deg);
-          opacity: 0;
-        }
-        10% {
-          opacity: 1;
-        }
-        90% {
-          opacity: 1;
-        }
-        100% {
-          transform: translateY(-40px) rotate(360deg);
-          opacity: 0;
-        }
-      }
+      will-change: transform, opacity;
     }
 
     /* Main card */
@@ -360,19 +325,36 @@
     // Detect mobile for reduced heart count and performance
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 600;
 
-    // Create ambient background hearts
+    // Create ambient background hearts — desktop only, JS-driven animation
     function createAmbientHearts() {
+      if (isMobile) return; // skip on mobile — they cause visual glitches
       const hearts = ['♥', '♡', '❤'];
-      const ambientCount = isMobile ? 6 : 12;
-      for (let i = 0; i < ambientCount; i++) {
+      const screenH = window.innerHeight;
+      for (let i = 0; i < 10; i++) {
         const heart = document.createElement('div');
         heart.className = 'ambient-heart';
         heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
         heart.style.left = Math.random() * 100 + '%';
         heart.style.fontSize = (20 + Math.random() * 25) + 'px';
-        heart.style.animationDuration = (12 + Math.random() * 18) + 's';
-        heart.style.animationDelay = (Math.random() * 15) + 's';
         document.body.appendChild(heart);
+
+        const duration = (14 + Math.random() * 16) * 1000;
+        const delay = Math.random() * 1000; // start within 4s, not 15s
+
+        function runFloat() {
+          const anim = heart.animate([
+            { transform: `translateY(0) rotate(0deg)`, opacity: 0 },
+            { opacity: 0.8, offset: 0.1 },
+            { opacity: 0.8, offset: 0.9 },
+            { transform: `translateY(-${screenH + 80}px) rotate(360deg)`, opacity: 0 }
+          ], {
+            duration: duration,
+            easing: 'linear'
+          });
+          anim.onfinish = runFloat;
+        }
+
+        setTimeout(runFloat, delay);
       }
     }
     createAmbientHearts();
@@ -446,11 +428,17 @@
       card.classList.add('hidden');
 
       // Spawn hearts
-      spawnFallingHearts(isMobile ? 40 : 80);
+      spawnFallingHearts(isMobile ? 32 : 80);
 
       // Keep spawning hearts in waves
-      setTimeout(() => spawnFallingHearts(isMobile ? 20 : 40), 2000);
-      setTimeout(() => spawnFallingHearts(isMobile ? 15 : 30), 4000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 16 : 40), 1000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 12 : 30), 2000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 16 : 40), 3000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 12 : 30), 4000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 16 : 40), 5000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 12 : 30), 6000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 16 : 40), 7000);
+      setTimeout(() => spawnFallingHearts(isMobile ? 12 : 30), 8000);
 
       // Show result after short delay
       setTimeout(() => {
